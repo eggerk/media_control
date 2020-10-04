@@ -1,0 +1,12 @@
+[package]
+name = "media_control"
+version = "0.1.0"
+authors = ["Kevin Egger <egger.kevin@gmail.com>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+failure = "0.1.8"
+mpris = "1.1.2"
+notify-rust = "4.0.0"
