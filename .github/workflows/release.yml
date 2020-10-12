@@ -1,0 +1,48 @@
+name: Release
+
+on:
+  push:
+    tags: [ "v*" ]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    name: Create Release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install dependencies
+        run: sudo apt-get update && sudo apt-get install -y libdbus-1-dev
+      - name: Install Cargo dependencies
+        run: cargo install cargo-deb
+      - name: Create package
+        run: cargo deb --verbose
+      - name: Export Debian name
+        id: export_deb
+        run: |
+          DEB_PATH=$(find target/debian -name \*.deb | tail -n 1)
+          DEB_NAME=$(basename "$DEB_PATH")
+          echo "::set-output name=deb_path::$DEB_PATH"
+          echo "::set-output name=deb_name::$DEB_NAME"
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # This token is provided by Actions, you do not need to create your own token
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: Release ${{ github.ref }}
+          draft: false
+          prerelease: false
+      - name: Upload Release Asset
+        id: upload-release-asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps
+          asset_path: ./${{ steps.export_deb.outputs.deb_path }}
+          asset_name: ${{ steps.export_deb.outputs.deb_name }}
+          asset_content_type: application/x-debian-package
